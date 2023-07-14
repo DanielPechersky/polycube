@@ -3,10 +3,10 @@ use std::collections::BTreeSet;
 use bitvec::prelude::*;
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Canonicalized(Polycube);
+pub struct Canonicalized(pub Polycube);
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Polycube(usize, BitVec);
+pub struct Polycube(pub usize, pub BitVec);
 
 pub fn children(Canonicalized(Polycube(n, bitvec)): Canonicalized) -> BTreeSet<Canonicalized> {
     let mut children = BTreeSet::new();

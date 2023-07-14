@@ -5,3 +5,10 @@ edition = "2021"
 
 [dependencies]
 bitvec = "1.0.1"
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "canonicalize"
+harness = false

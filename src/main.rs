@@ -2,7 +2,7 @@ use std::collections::BTreeSet;
 
 use bitvec::prelude::*;
 
-use polycube::Canonicalized;
+use polycube::{children, Canonicalized, Polycube};
 
 fn main() {
     let mut generation = BTreeSet::new();
