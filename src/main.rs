@@ -10,11 +10,12 @@ fn main() {
     let mut generation = BTreeSet::new();
     generation.insert(Canonicalized(Polycube(1, bitvec![1])));
 
-    for _ in 0..12 {
+    println!("Gen 1: {}", generation.len());
+    for g in 2..22 {
         generation = generation
             .par_iter()
             .flat_map(children)
             .collect::<BTreeSet<_>>();
-        println!("{} cubes", generation.len());
+        println!("Gen {g}: {}", generation.len());
     }
 }
