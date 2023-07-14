@@ -24,7 +24,7 @@ pub fn children(Canonicalized(Polycube(n, bitvec)): &Canonicalized) -> BTreeSet<
 #[test]
 fn children_test() {
     let c = Canonicalized(Polycube(1, bitvec![1]));
-    let (ns, vs): (Vec<_>, Vec<_>) = children(c)
+    let (ns, vs): (Vec<_>, Vec<_>) = children(&c)
         .into_iter()
         .map(|Canonicalized(Polycube(n, v))| (n, v))
         .unzip();
@@ -35,7 +35,7 @@ fn children_test() {
 #[test]
 fn second_generation_children_test() {
     let c = Canonicalized(Polycube(2, bitvec![1, 1, 0, 0]));
-    let (ns, vs): (Vec<_>, Vec<_>) = children(c)
+    let (ns, vs): (Vec<_>, Vec<_>) = children(&c)
         .into_iter()
         .map(|Canonicalized(Polycube(n, v))| (n, v))
         .unzip();
