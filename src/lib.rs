@@ -8,10 +8,10 @@ pub struct Canonicalized(pub Polycube);
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Polycube(pub usize, pub BitVec);
 
-pub fn children(Canonicalized(Polycube(n, bitvec)): Canonicalized) -> BTreeSet<Canonicalized> {
+pub fn children(Canonicalized(Polycube(n, bitvec)): &Canonicalized) -> BTreeSet<Canonicalized> {
     let mut children = BTreeSet::new();
     let (parent, placements) =
-        potential_cube_placements(Canonicalized(Polycube(n, bitvec.clone())));
+        potential_cube_placements(Canonicalized(Polycube(*n, bitvec.clone())));
     for i in placements.iter_ones() {
         let mut new_polycube = parent.clone();
         new_polycube.set(i, true);

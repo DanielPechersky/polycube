@@ -2,6 +2,8 @@ use std::collections::BTreeSet;
 
 use bitvec::prelude::*;
 
+use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+
 use polycube::{children, Canonicalized, Polycube};
 
 fn main() {
@@ -10,7 +12,7 @@ fn main() {
 
     for _ in 0..12 {
         generation = generation
-            .into_iter()
+            .par_iter()
             .flat_map(children)
             .collect::<BTreeSet<_>>();
         println!("{} cubes", generation.len());
