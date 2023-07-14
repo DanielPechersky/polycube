@@ -135,9 +135,7 @@ pub fn rotate90(Polycube(n, mut bitvec): Polycube, sl: usize) -> Polycube {
 }
 
 fn reverse_rows(n: usize, bitslice: &mut BitSlice) {
-    for j in (0..n).map(|j| j * n) {
-        bitslice[j..j + n].reverse();
-    }
+    bitslice.chunks_exact_mut(n).for_each(|row| row.reverse());
 }
 
 fn transpose(n: usize, bitslice: &mut BitSlice) {
