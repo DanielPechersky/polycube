@@ -157,14 +157,16 @@ pub fn print_bitvec(n: usize, bitvec: &BitSlice) {
     for j in 0..n {
         for k in 0..n {
             let Some(v) = bitvec.get(index(n, j, k)) else {
-                    println!("#");
+                    println!("❌");
                     println!();
                     return;
                 };
-            print!("{}", *v as u8);
+            let c = if *v { '█' } else { '.' };
+            print!("{c}");
         }
         println!();
     }
+    println!();
 }
 
 pub fn potential_cube_placements(c: Canonicalized) -> (BitVec, BitVec) {
