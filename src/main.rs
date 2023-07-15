@@ -19,7 +19,7 @@ fn main() {
     for g in 2..=n {
         generation = generation
             .into_par_iter()
-            .flat_map(|p| children(p, g))
+            .flat_map(|p| children(p, g - 1))
             .collect::<BTreeSet<_>>();
 
         if display {
