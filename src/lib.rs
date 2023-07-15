@@ -3,15 +3,16 @@ use std::collections::BTreeSet;
 use bitvec::prelude::*;
 
 pub fn children(parent: BitVec, generation: usize) -> BTreeSet<BitVec> {
-    let mut children = BTreeSet::new();
     let (parent, placements) = potential_cube_placements(parent, generation);
-    for i in placements.iter_ones() {
-        let mut new_polycube = parent.clone();
-        new_polycube.set(i, true);
-        let canonicalized = canonicalize(new_polycube, generation + 1, generation + 2);
-        children.insert(canonicalized);
-    }
-    children
+
+    placements
+        .iter_ones()
+        .map(move |i| {
+            let mut new_polycube = parent.clone();
+            new_polycube.set(i, true);
+            canonicalize(new_polycube, generation + 1, generation + 2)
+        })
+        .collect()
 }
 
 #[test]
