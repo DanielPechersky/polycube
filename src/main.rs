@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 use bitvec::prelude::*;
 
@@ -12,7 +12,7 @@ fn main() {
     let n = args.next().unwrap().parse::<usize>().unwrap();
     let display = matches!(args.next().as_deref(), Some("-d" | "--display"));
 
-    let mut generation = BTreeSet::new();
+    let mut generation = HashSet::new();
     generation.insert(bitvec![1]);
 
     println!("Gen 1: {}", generation.len());
@@ -20,7 +20,7 @@ fn main() {
         generation = generation
             .into_par_iter()
             .map(|p| children(p, g - 1))
-            .reduce(BTreeSet::default, |mut a, b| {
+            .reduce(Default::default, |mut a, b| {
                 a.extend(b);
                 a
             });

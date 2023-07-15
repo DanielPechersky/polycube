@@ -1,8 +1,8 @@
-use std::collections::BTreeSet;
+use std::collections::HashSet;
 
 use bitvec::prelude::*;
 
-pub fn children(parent: BitVec, generation: usize) -> BTreeSet<BitVec> {
+pub fn children(parent: BitVec, generation: usize) -> HashSet<BitVec> {
     let (parent, placements) = potential_cube_placements(parent, generation);
 
     placements
