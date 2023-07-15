@@ -2,20 +2,13 @@ use std::collections::BTreeSet;
 
 use bitvec::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct Canonicalized(pub Polycube);
-
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
-pub struct Polycube(pub usize, pub BitVec);
-
-pub fn children(Canonicalized(Polycube(n, bitvec)): &Canonicalized) -> BTreeSet<Canonicalized> {
+pub fn children(parent: BitVec, generation: usize) -> BTreeSet<BitVec> {
     let mut children = BTreeSet::new();
-    let (parent, placements) =
-        potential_cube_placements(Canonicalized(Polycube(*n, bitvec.clone())));
+    let (parent, placements) = potential_cube_placements(parent, generation);
     for i in placements.iter_ones() {
         let mut new_polycube = parent.clone();
         new_polycube.set(i, true);
-        let canonicalized = canonicalize(Polycube(n + 1, new_polycube), n + 2);
+        let canonicalized = canonicalize(new_polycube, generation + 1, generation + 2);
         children.insert(canonicalized);
     }
     children
@@ -23,128 +16,114 @@ pub fn children(Canonicalized(Polycube(n, bitvec)): &Canonicalized) -> BTreeSet<
 
 #[test]
 fn children_test() {
-    let c = Canonicalized(Polycube(1, bitvec![1]));
-    let (ns, vs): (Vec<_>, Vec<_>) = children(&c)
-        .into_iter()
-        .map(|Canonicalized(Polycube(n, v))| (n, v))
-        .unzip();
-    assert_eq!(vs, vec![bitvec![1, 1, 0, 0]]);
-    assert_eq!(ns, vec![2]);
+    let children: Vec<_> = children(bitvec![1], 1).into_iter().collect();
+    assert_eq!(children, vec![bits![1, 1, 0, 0]]);
 }
 
 #[test]
 fn second_generation_children_test() {
-    let c = Canonicalized(Polycube(2, bitvec![1, 1, 0, 0]));
-    let (ns, vs): (Vec<_>, Vec<_>) = children(&c)
-        .into_iter()
-        .map(|Canonicalized(Polycube(n, v))| (n, v))
-        .unzip();
+    let children: Vec<_> = children(bitvec![1, 1, 0, 0], 2).into_iter().collect();
     assert_eq!(
-        vs,
+        children,
         vec![
-            bitvec![1, 1, 0, 1, 0, 0, 0, 0, 0],
-            bitvec![1, 1, 1, 0, 0, 0, 0, 0, 0]
+            bits![1, 1, 0, 1, 0, 0, 0, 0, 0],
+            bits![1, 1, 1, 0, 0, 0, 0, 0, 0]
         ]
     );
-    assert_eq!(ns, vec![3, 3]);
 }
 
-pub fn canonicalize(p: Polycube, bitvec_side_length: usize) -> Canonicalized {
-    let c = rotations(p, bitvec_side_length)
+pub fn canonicalize(polycube: BitVec, generation: usize, side_length: usize) -> BitVec {
+    rotations(polycube, side_length)
         .into_iter()
-        .map(|p| move_top_left(p, bitvec_side_length))
-        .max_by_key(|Polycube(_, v)| v.clone())
-        .unwrap();
+        .map(|mut p| {
+            move_top_left(&mut p, side_length);
+            p
+        })
+        .max()
+        .map(|p| crop(&p, side_length, generation))
+        .unwrap()
+}
 
-    let Polycube(n, v) = c;
-    let mut chunks = v.chunks(bitvec_side_length);
-    let mut v = BitVec::with_capacity(n.pow(2));
-    for _ in 0..n {
+pub fn crop(bits: &BitSlice, from: usize, to: usize) -> BitVec {
+    assert!(from >= to);
+    let mut chunks = bits.chunks(from);
+    let mut v = BitVec::with_capacity(to.pow(2));
+    for _ in 0..to {
         let c = chunks.next().unwrap();
-        v.extend_from_bitslice(&c[0..n]);
+        v.extend_from_bitslice(&c[0..to]);
     }
-
-    assert_eq!(v.len(), n.pow(2));
-
-    Canonicalized(Polycube(n, v))
+    assert_eq!(v.len(), to.pow(2));
+    v
 }
 
 #[test]
 fn canonicalize_test() {
-    let p = Polycube(2, bitvec![0, 1, 0, 1]);
-    let c = canonicalize(p, 2);
-    assert_eq!(c, Canonicalized(Polycube(2, bitvec![1, 1, 0, 0])));
+    let c = canonicalize(bitvec![0, 1, 0, 1], 2, 2);
+    assert_eq!(c, bits![1, 1, 0, 0]);
 
-    let p = Polycube(2, bitvec![0, 0, 0, 0, 1, 0, 0, 1, 0]);
-    let c = canonicalize(p, 3);
-    assert_eq!(c, Canonicalized(Polycube(2, bitvec![1, 1, 0, 0])));
+    let c = canonicalize(bitvec![0, 0, 0, 0, 1, 0, 0, 1, 0], 2, 3);
+    assert_eq!(c, bits![1, 1, 0, 0]);
 
-    let p = Polycube(3, bitvec![1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    let c = canonicalize(p, 4);
-    assert_eq!(
-        c,
-        Canonicalized(Polycube(3, bitvec![1, 1, 0, 1, 0, 0, 0, 0, 0]))
+    let c = canonicalize(
+        bitvec![1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        3,
+        4,
     );
+    assert_eq!(c, bits![1, 1, 0, 1, 0, 0, 0, 0, 0]);
 }
 
-pub fn move_top_left(Polycube(n, mut bitvec): Polycube, bitvec_side_length: usize) -> Polycube {
-    let leading_rows = bitvec.leading_zeros() / bitvec_side_length;
-    for i in 0..bitvec_side_length {
-        if (0..bitvec_side_length).any(|j| bitvec[j * bitvec_side_length + i]) {
-            bitvec.shift_left(i + leading_rows * bitvec_side_length);
+pub fn move_top_left(bits: &mut BitSlice, side_length: usize) {
+    let leading_rows = bits.leading_zeros() / side_length;
+    for i in 0..side_length {
+        if (0..side_length).any(|j| bits[j * side_length + i]) {
+            bits.shift_left(i + leading_rows * side_length);
             break;
         }
     }
-    Polycube(n, bitvec)
 }
 
 #[test]
 fn move_top_left_test() {
-    let p = Polycube(2, bitvec![0, 1, 0, 1]);
-    let c = move_top_left(p, 2);
-    assert_eq!(c, Polycube(2, bitvec![1, 0, 1, 0]));
+    let mut b = bitvec![0, 1, 0, 1];
+    move_top_left(&mut b, 2);
+    assert_eq!(b, bits![1, 0, 1, 0]);
 
-    let p = Polycube(2, bitvec![0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
-    let c = move_top_left(p, 4);
-    assert_eq!(
-        c,
-        Polycube(2, bitvec![1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    );
+    let mut b = bitvec![0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    move_top_left(&mut b, 4);
+    assert_eq!(b, bits![1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 
-    let p = Polycube(3, bitvec![0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]);
-    let c = move_top_left(p, 4);
-    assert_eq!(
-        c,
-        Polycube(3, bitvec![1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
-    );
+    let mut b = bitvec![0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0];
+    move_top_left(&mut b, 4);
+    assert_eq!(b, bits![1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 }
 
-pub fn rotations(p: Polycube, sl: usize) -> [Polycube; 4] {
-    let r1 = rotate90(&p, sl);
-    let r2 = rotate90(&r1, sl);
-    let r3 = rotate90(&r2, sl);
-    [p, r1, r2, r3]
+pub fn rotations(b: BitVec, side_length: usize) -> [BitVec; 4] {
+    let r1 = rotate90(&b, side_length);
+    let r2 = rotate90(&r1, side_length);
+    let r3 = rotate90(&r2, side_length);
+    [b, r1, r2, r3]
 }
 
-pub fn rotate90(&Polycube(n, ref bitvec): &Polycube, sl: usize) -> Polycube {
-    let mut out = bitvec![0; sl.pow(2)];
-    for i in 0..sl {
-        for j in 0..sl {
-            let (a, b) = (index(sl, i, j), index(sl, j, sl - i - 1));
-            out.set(a, bitvec[b]);
+pub fn rotate90(b: &BitSlice, side_length: usize) -> BitVec {
+    let s = side_length;
+    let mut out = bitvec![0; s.pow(2)];
+    for i in 0..s {
+        for j in 0..s {
+            let (idx_out, idx_in) = (index(s, i, j), index(s, j, s - i - 1));
+            out.set(idx_out, b[idx_in]);
         }
     }
-    Polycube(n, out)
+    out
 }
 
-fn index(n: usize, j: usize, k: usize) -> usize {
-    j * n + k
+fn index(n: usize, i: usize, j: usize) -> usize {
+    i * n + j
 }
 
-pub fn print_bitvec(n: usize, bitvec: &BitSlice) {
-    for j in 0..n {
-        for k in 0..n {
-            let Some(v) = bitvec.get(index(n, j, k)) else {
+pub fn print_bitvec(bitvec: &BitSlice, side_length: usize) {
+    for i in 0..side_length {
+        for j in 0..side_length {
+            let Some(v) = bitvec.get(index(side_length, i, j)) else {
                     println!("❌");
                     println!();
                     return;
@@ -157,10 +136,10 @@ pub fn print_bitvec(n: usize, bitvec: &BitSlice) {
     println!();
 }
 
-pub fn potential_cube_placements(c: Canonicalized) -> (BitVec, BitVec) {
-    let n = c.0 .0 + 2;
-    let original = pad_out(c);
-    let mut placements: BitVec = bitvec![0; n.pow(2)];
+pub fn potential_cube_placements(bitvec: BitVec, side_length: usize) -> (BitVec, BitVec) {
+    let original = pad_all_sides(bitvec, side_length);
+    let side_length = side_length + 2;
+    let mut placements: BitVec = bitvec![0; side_length.pow(2)];
 
     // left
     placements |= &original[1..];
@@ -169,20 +148,21 @@ pub fn potential_cube_placements(c: Canonicalized) -> (BitVec, BitVec) {
     placements[1..] |= &original;
 
     // up
-    placements |= &original[n..];
+    placements |= &original[side_length..];
 
     // down
-    placements[n..] |= &original;
+    placements[side_length..] |= &original;
 
-    placements &= !original.clone();
+    let original = !original;
+    placements &= &original;
+    let original = !original;
 
     (original, placements)
 }
 
 #[test]
 fn potential_cube_placements_test() {
-    let c = Canonicalized(Polycube(1, bitvec![1]));
-    let p = potential_cube_placements(c);
+    let p = potential_cube_placements(bitvec![1], 1);
     assert_eq!(
         p,
         (
@@ -192,22 +172,21 @@ fn potential_cube_placements_test() {
     );
 }
 
-fn pad_out(Canonicalized(Polycube(n, bitvec)): Canonicalized) -> BitVec {
-    let mut r = bitvec![0; (n + 2).pow(2)];
-    for i in 1..(n + 2 - 1) {
-        r[index(n + 2, i, 1)..index(n + 2, i, n + 1)] |=
-            &bitvec[index(n, i - 1, 0)..index(n, i - 1, n)]
+fn pad_all_sides(bitvec: BitVec, side_length: usize) -> BitVec {
+    let s = side_length;
+    let mut r = bitvec![0; (s + 2).pow(2)];
+    for i in 1..(s + 2 - 1) {
+        r[index(s + 2, i, 1)..index(s + 2, i, s + 1)] |=
+            &bitvec[index(s, i - 1, 0)..index(s, i - 1, s)]
     }
     r
 }
 
 #[test]
 fn pad_out_test() {
-    let c = Canonicalized(Polycube(1, bitvec![1]));
-    let p = pad_out(c);
+    let p = pad_all_sides(bitvec![1], 1);
     assert_eq!(p, bitvec![0, 0, 0, 0, 1, 0, 0, 0, 0]);
 
-    let c = Canonicalized(Polycube(2, bitvec![1, 1, 1, 0]));
-    let p = pad_out(c);
+    let p = pad_all_sides(bitvec![1, 1, 1, 0], 2);
     assert_eq!(p, bitvec![0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0]);
 }

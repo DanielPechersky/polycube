@@ -2,9 +2,9 @@ use std::collections::BTreeSet;
 
 use bitvec::prelude::*;
 
-use rayon::prelude::{IntoParallelRefIterator, ParallelIterator};
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 
-use polycube::{children, print_bitvec, Canonicalized, Polycube};
+use polycube::{children, print_bitvec};
 
 fn main() {
     let mut args = std::env::args();
@@ -13,18 +13,18 @@ fn main() {
     let display = matches!(args.next().as_deref(), Some("-d" | "--display"));
 
     let mut generation = BTreeSet::new();
-    generation.insert(Canonicalized(Polycube(1, bitvec![1])));
+    generation.insert(bitvec![1]);
 
     println!("Gen 1: {}", generation.len());
     for g in 2..=n {
         generation = generation
-            .par_iter()
-            .flat_map(children)
+            .into_par_iter()
+            .flat_map(|p| children(p, g))
             .collect::<BTreeSet<_>>();
 
         if display {
-            for Canonicalized(Polycube(n, v)) in generation.iter() {
-                print_bitvec(*n, v);
+            for v in generation.iter() {
+                print_bitvec(v, g);
             }
         }
 
