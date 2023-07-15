@@ -7,7 +7,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("rotate90", |b| {
         b.iter(|| {
             rotate90(
-                black_box(polycube::Polycube(
+                black_box(&polycube::Polycube(
                     0,
                     bitvec![
                         1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1,

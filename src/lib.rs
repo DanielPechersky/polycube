@@ -120,29 +120,21 @@ fn move_top_left_test() {
 }
 
 pub fn rotations(p: Polycube, sl: usize) -> [Polycube; 4] {
-    let r1 = rotate90(p.clone(), sl);
-    let r2 = rotate90(r1.clone(), sl);
-    let r3 = rotate90(r2.clone(), sl);
+    let r1 = rotate90(&p, sl);
+    let r2 = rotate90(&r1, sl);
+    let r3 = rotate90(&r2, sl);
     [p, r1, r2, r3]
 }
 
-pub fn rotate90(Polycube(n, mut bitvec): Polycube, sl: usize) -> Polycube {
-    transpose(sl, &mut bitvec);
-    reverse_rows(sl, &mut bitvec);
-    Polycube(n, bitvec)
-}
-
-fn reverse_rows(n: usize, bitslice: &mut BitSlice) {
-    bitslice.chunks_exact_mut(n).for_each(|row| row.reverse());
-}
-
-fn transpose(n: usize, bitslice: &mut BitSlice) {
-    for j in 0..n {
-        for k in 0..j {
-            let (a, b) = (index(n, j, k), index(n, k, j));
-            bitslice.swap(a, b);
+pub fn rotate90(&Polycube(n, ref bitvec): &Polycube, sl: usize) -> Polycube {
+    let mut out = bitvec![0; sl.pow(2)];
+    for i in 0..sl {
+        for j in 0..sl {
+            let (a, b) = (index(sl, i, j), index(sl, j, sl - i - 1));
+            out.set(a, bitvec[b]);
         }
     }
+    Polycube(n, out)
 }
 
 fn index(n: usize, j: usize, k: usize) -> usize {
