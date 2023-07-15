@@ -2,10 +2,10 @@ use std::collections::BTreeSet;
 
 use bitvec::prelude::*;
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Canonicalized(pub Polycube);
 
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone)]
 pub struct Polycube(pub usize, pub BitVec);
 
 pub fn children(Canonicalized(Polycube(n, bitvec)): &Canonicalized) -> BTreeSet<Canonicalized> {
@@ -119,13 +119,11 @@ fn move_top_left_test() {
     );
 }
 
-pub fn rotations(Polycube(n, bitvec): Polycube, sl: usize) -> [Polycube; 4] {
-    [
-        Polycube(n, bitvec.clone()),
-        rotate90(Polycube(n, bitvec.clone()), sl),
-        rotate90(rotate90(Polycube(n, bitvec.clone()), sl), sl),
-        rotate90(rotate90(rotate90(Polycube(n, bitvec.clone()), sl), sl), sl),
-    ]
+pub fn rotations(p: Polycube, sl: usize) -> [Polycube; 4] {
+    let r1 = rotate90(p.clone(), sl);
+    let r2 = rotate90(r1.clone(), sl);
+    let r3 = rotate90(r2.clone(), sl);
+    [p, r1, r2, r3]
 }
 
 pub fn rotate90(Polycube(n, mut bitvec): Polycube, sl: usize) -> Polycube {
