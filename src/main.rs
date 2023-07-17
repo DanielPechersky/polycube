@@ -1,10 +1,4 @@
-use std::collections::HashSet;
-
-use bitvec::prelude::*;
-
-use rayon::prelude::{IntoParallelIterator, ParallelIterator};
-
-use polycube::{children, print_bitvec};
+use polycube::{print_bitvec, Generation};
 
 fn main() {
     let mut args = std::env::args();
@@ -12,25 +6,17 @@ fn main() {
     let n = args.next().unwrap().parse::<usize>().unwrap();
     let display = matches!(args.next().as_deref(), Some("-d" | "--display"));
 
-    let mut generation = HashSet::new();
-    generation.insert(bitvec![1]);
+    let mut generation = Generation::default();
 
-    println!("Gen 1: {}", generation.len());
-    for g in 2..=n {
-        generation = generation
-            .into_par_iter()
-            .map(|p| children(p, g - 1))
-            .reduce(Default::default, |mut a, b| {
-                a.extend(b);
-                a
-            });
+    for _ in 0..n {
+        generation.advance();
+
+        println!("Gen {}: {}", generation.age, generation.shapes.len());
 
         if display {
-            for v in generation.iter() {
-                print_bitvec(v, g);
+            for v in generation.shapes.iter() {
+                print_bitvec(v, generation.age);
             }
         }
-
-        println!("Gen {g}: {}", generation.len());
     }
 }

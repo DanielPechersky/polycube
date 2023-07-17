@@ -2,6 +2,39 @@ use std::collections::HashSet;
 
 use bitvec::prelude::*;
 
+pub struct Generation {
+    pub shapes: HashSet<BitVec>,
+    pub age: usize,
+}
+
+impl Default for Generation {
+    fn default() -> Self {
+        Self {
+            shapes: HashSet::from([bitvec![1]]),
+            age: 1,
+        }
+    }
+}
+
+impl Generation {
+    pub fn advance(&mut self) {
+        use rayon::prelude::{IntoParallelIterator, ParallelIterator};
+
+        let shapes = std::mem::take(&mut self.shapes);
+
+        let shapes = shapes
+            .into_par_iter()
+            .map(|p| children(p, self.age))
+            .reduce(Default::default, |mut a, b| {
+                a.extend(b);
+                a
+            });
+
+        self.shapes = shapes;
+        self.age += 1;
+    }
+}
+
 pub fn children(parent: BitVec, generation: usize) -> HashSet<BitVec> {
     let (parent, placements) = potential_cube_placements(parent, generation);
 
