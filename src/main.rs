@@ -8,7 +8,7 @@ fn main() {
 
     let mut generation = Generation::default();
 
-    for _ in 0..n {
+    for _ in 1..n {
         generation.advance();
 
         println!("Gen {}: {}", generation.age, generation.shapes.len());
