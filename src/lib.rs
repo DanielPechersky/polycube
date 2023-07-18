@@ -63,7 +63,9 @@ pub fn children(parent: BitVec, generation: usize) -> impl Iterator<Item = BitVe
     iter.map(move |i| {
         let mut new_polycube = parent.clone();
         new_polycube.set(i, true);
-        canonicalize(new_polycube, generation + 1, generation + 2)
+        nudge_top_left(&mut new_polycube, generation + 2);
+        let new_polycube = crop(&new_polycube, generation + 2, generation + 1);
+        canonicalize(new_polycube, generation + 1, generation + 1)
     })
 }
 
@@ -103,6 +105,11 @@ pub fn canonicalize(polycube: BitVec, generation: usize, side_length: usize) -> 
 
 pub fn crop(bits: &BitSlice, from: usize, to: usize) -> BitVec {
     assert!(from >= to);
+
+    if from == to {
+        return bits.to_bitvec();
+    }
+
     let mut chunks = bits.chunks(from);
     let mut v = BitVec::with_capacity(to.pow(2));
     for _ in 0..to {
@@ -130,13 +137,26 @@ fn canonicalize_test() {
 }
 
 pub fn move_top_left(bits: &mut BitSlice, side_length: usize) {
-    let leading_rows = bits.leading_zeros() / side_length;
-    for i in 0..side_length {
-        if (0..side_length).any(|j| bits[j * side_length + i]) {
-            bits.shift_left(i + leading_rows * side_length);
-            break;
-        }
-    }
+    let leading_rows = leading_rows(bits, side_length);
+    let leading_cols = leading_cols(bits, side_length);
+
+    bits.shift_left(leading_cols + leading_rows * side_length);
+}
+
+fn leading_rows(bits: &mut BitSlice, side_length: usize) -> usize {
+    bits.leading_zeros() / side_length
+}
+
+fn leading_cols(bits: &mut BitSlice, side_length: usize) -> usize {
+    (0..side_length)
+        .find(|&i| (0..side_length).any(|j| bits[i + j * side_length]))
+        .unwrap_or(side_length)
+}
+
+pub fn nudge_top_left(bits: &mut BitSlice, side_length: usize) {
+    let nudge_up = bits.leading_zeros() >= side_length;
+    let nudge_left = (0..side_length).all(|i| !bits[i * side_length]);
+    bits.shift_left(usize::from(nudge_left) + usize::from(nudge_up) * side_length);
 }
 
 #[test]
