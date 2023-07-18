@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 
-use bitvec::prelude::*;
+use bitvec::{prelude::*, slice::IterOnes};
+use ouroboros::self_referencing;
 
 #[derive(Clone)]
 pub struct Generation {
@@ -25,28 +26,45 @@ impl Generation {
 
         let shapes = shapes
             .into_par_iter()
-            .map(|p| children(p, self.age))
-            .reduce(Default::default, |mut a, b| {
-                a.extend(b);
-                a
-            });
+            .flat_map_iter(|p| children(p, self.age))
+            .collect();
 
         self.shapes = shapes;
         self.age += 1;
     }
 }
 
-pub fn children(parent: BitVec, generation: usize) -> HashSet<BitVec> {
+#[self_referencing]
+struct PlacementsIter {
+    placements: BitVec,
+
+    #[borrows(placements)]
+    #[not_covariant]
+    iter: IterOnes<'this, usize, Lsb0>,
+}
+
+impl Iterator for PlacementsIter {
+    type Item = usize;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.with_iter_mut(|iter| iter.next())
+    }
+}
+
+pub fn children(parent: BitVec, generation: usize) -> impl Iterator<Item = BitVec> {
     let (parent, placements) = potential_cube_placements(parent, generation);
 
-    placements
-        .iter_ones()
-        .map(move |i| {
-            let mut new_polycube = parent.clone();
-            new_polycube.set(i, true);
-            canonicalize(new_polycube, generation + 1, generation + 2)
-        })
-        .collect()
+    let iter = PlacementsIterBuilder {
+        placements: placements.clone(),
+        iter_builder: |placements| placements.iter_ones(),
+    }
+    .build();
+
+    iter.map(move |i| {
+        let mut new_polycube = parent.clone();
+        new_polycube.set(i, true);
+        canonicalize(new_polycube, generation + 1, generation + 2)
+    })
 }
 
 #[test]
