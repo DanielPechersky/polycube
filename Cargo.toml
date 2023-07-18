@@ -13,3 +13,8 @@ criterion = "0.5.1"
 [[bench]]
 name = "canonicalize"
 harness = false
+
+[[bench]]
+name = "generations"
+harness = false
+

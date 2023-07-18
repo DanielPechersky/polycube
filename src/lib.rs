@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use bitvec::prelude::*;
 
+#[derive(Clone)]
 pub struct Generation {
     pub shapes: HashSet<BitVec>,
     pub age: usize,
