@@ -65,7 +65,7 @@ pub fn children(parent: BitVec, generation: usize) -> impl Iterator<Item = BitVe
         new_polycube.set(i, true);
         nudge_top_left(&mut new_polycube, generation + 2);
         let new_polycube = crop(&new_polycube, generation + 2, generation + 1);
-        canonicalize(new_polycube, generation + 1, generation + 1)
+        canonicalize(new_polycube, generation + 1)
     })
 }
 
@@ -91,7 +91,7 @@ fn second_generation_children_test() {
     );
 }
 
-pub fn canonicalize(polycube: BitVec, generation: usize, side_length: usize) -> BitVec {
+pub fn canonicalize(polycube: BitVec, side_length: usize) -> BitVec {
     rotations(polycube, side_length)
         .into_iter()
         .map(|mut p| {
@@ -99,7 +99,6 @@ pub fn canonicalize(polycube: BitVec, generation: usize, side_length: usize) -> 
             p
         })
         .max()
-        .map(|p| crop(&p, side_length, generation))
         .unwrap()
 }
 
@@ -122,18 +121,14 @@ pub fn crop(bits: &BitSlice, from: usize, to: usize) -> BitVec {
 
 #[test]
 fn canonicalize_test() {
-    let c = canonicalize(bitvec![0, 1, 0, 1], 2, 2);
+    let c = canonicalize(bitvec![0, 1, 0, 1], 2);
     assert_eq!(c, bits![1, 1, 0, 0]);
 
-    let c = canonicalize(bitvec![0, 0, 0, 0, 1, 0, 0, 1, 0], 2, 3);
-    assert_eq!(c, bits![1, 1, 0, 0]);
+    let c = canonicalize(bitvec![0, 0, 0, 0, 1, 0, 0, 1, 0], 3);
+    assert_eq!(c, bits![1, 1, 0, 0, 0, 0, 0, 0, 0]);
 
-    let c = canonicalize(
-        bitvec![1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-        3,
-        4,
-    );
-    assert_eq!(c, bits![1, 1, 0, 1, 0, 0, 0, 0, 0]);
+    let c = canonicalize(bitvec![1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], 4);
+    assert_eq!(c, bits![1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
 }
 
 pub fn move_top_left(bits: &mut BitSlice, side_length: usize) {
