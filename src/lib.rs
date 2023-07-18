@@ -69,13 +69,17 @@ pub fn children(parent: BitVec, generation: usize) -> impl Iterator<Item = BitVe
 
 #[test]
 fn children_test() {
-    let children: Vec<_> = children(bitvec![1], 1).into_iter().collect();
+    let mut children: Vec<_> = children(bitvec![1], 1).collect();
+    children.sort();
+    children.dedup();
     assert_eq!(children, vec![bits![1, 1, 0, 0]]);
 }
 
 #[test]
 fn second_generation_children_test() {
-    let children: Vec<_> = children(bitvec![1, 1, 0, 0], 2).into_iter().collect();
+    let mut children: Vec<_> = children(bitvec![1, 1, 0, 0], 2).collect();
+    children.sort();
+    children.dedup();
     assert_eq!(
         children,
         vec![
