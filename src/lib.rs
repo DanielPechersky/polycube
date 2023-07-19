@@ -12,7 +12,7 @@ pub struct Generation {
 impl Default for Generation {
     fn default() -> Self {
         Self {
-            shapes: HashSet::from([bitvec![1]]),
+            shapes: [bitvec![1]].into(),
             age: 1,
         }
     }
